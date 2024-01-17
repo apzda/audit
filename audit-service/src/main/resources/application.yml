@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: audit-service
+
+apzda:
+  cloud:
+    reference:
+      AuditService:
+        svc-name: http://localhost:8081
