@@ -15,12 +15,6 @@ spring:
       lettuce:
         pool:
           enabled: true
-  flyway:
-    enabled: false
-  jpa:
-    open-in-view: false
-  config:
-    import: classpath:apzda.audit.service.properties
 logging:
   level:
     com.apzda.cloud: trace

@@ -43,4 +43,4 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Build with Maven
-        run: mvn -B -P+it package -Dskip.container=yes -Djava.version=${{ matrix.java }} --file pom.xml
+        run: mvn -B package -Dskip.container=yes -Djava.version=${{ matrix.java }} --file pom.xml

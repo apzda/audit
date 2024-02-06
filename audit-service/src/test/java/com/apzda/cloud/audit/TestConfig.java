@@ -16,14 +16,16 @@
  */
 package com.apzda.cloud.audit;
 
-import org.springframework.boot.test.context.TestConfiguration;
+import com.apzda.cloud.audit.server.EnableAuditServer;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * @author fengz (windywany@gmail.com)
  * @version 1.0.0
  * @since 1.0.0
  **/
-@TestConfiguration
+@SpringBootApplication
+@EnableAuditServer
 public class TestConfig {
 
 }
