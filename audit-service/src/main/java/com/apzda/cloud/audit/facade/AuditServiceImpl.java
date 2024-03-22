@@ -18,7 +18,7 @@ package com.apzda.cloud.audit.facade;
 
 import com.apzda.cloud.audit.domain.repository.AuditLogRepository;
 import com.apzda.cloud.audit.proto.*;
-import com.apzda.cloud.gsvc.domain.Pager;
+import com.apzda.cloud.gsvc.domain.PagerUtils;
 import com.apzda.cloud.gsvc.ext.GsvcExt;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -45,7 +45,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuditServiceImpl implements AuditService {
 
-    private static final TypeReference<List<Arg>> ARG_TYPE_HINT = new TypeReference<List<Arg>>() {
+    private static final TypeReference<List<Arg>> ARG_TYPE_HINT = new TypeReference<>() {
     };
 
     private final ObjectMapper objectMapper;
@@ -88,7 +88,7 @@ public class AuditServiceImpl implements AuditService {
     @PreAuthorize("hasAuthority('view:auditlog')")
     public QueryRes logs(Query request) {
         val pager = request.getPager();
-        val pr = Pager.of(pager);
+        val pr = PagerUtils.of(pager);
         val logs = auditLogRepository
             .findAll((Specification<com.apzda.cloud.audit.domain.entity.AuditLog>) (root, query, builder) -> {
                 val cons = new ArrayList<Predicate>();
@@ -111,7 +111,7 @@ public class AuditServiceImpl implements AuditService {
                 return builder.and(cons.toArray(new Predicate[0]));
             }, pr);
 
-        val pageInfo = Pager.of(logs);
+        val pageInfo = PagerUtils.of(logs);
         val builder = QueryRes.newBuilder();
         builder.setPager(pageInfo);
         builder.addAllLog(logs.getContent().stream().map((lg) -> {

@@ -1,6 +1,6 @@
 CREATE TABLE `apzda_audit_log`
 (
-    id         BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+    id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     created_at BIGINT UNSIGNED NULL     DEFAULT NULL,
     created_by VARCHAR(32)     NULL COMMENT 'Create User Id',
     updated_at BIGINT UNSIGNED NULL     DEFAULT NULL,

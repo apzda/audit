@@ -16,10 +16,11 @@
  */
 package com.apzda.cloud.audit.domain.entity;
 
-import com.apzda.cloud.gsvc.domain.*;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Table;
+import com.apzda.cloud.gsvc.domain.AuditingEntityListener;
+import com.apzda.cloud.gsvc.model.Auditable;
+import com.apzda.cloud.gsvc.model.SoftDeletable;
+import com.apzda.cloud.gsvc.model.Tenantable;
+import jakarta.persistence.*;
 import lombok.*;
 
 /**
@@ -35,8 +36,12 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-@EntityListeners(AutoMetaListener.class)
-public class AuditLog extends SnowflakeIdEntity implements AuditedEntity, TenantedEntity, SoftDeletedEntity {
+@EntityListeners(AuditingEntityListener.class)
+public class AuditLog implements Auditable<Long, String, Long>, Tenantable<String>, SoftDeletable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
     private Long createdAt;
 
