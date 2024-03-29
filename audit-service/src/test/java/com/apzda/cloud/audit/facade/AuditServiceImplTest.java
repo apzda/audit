@@ -9,11 +9,13 @@ import com.apzda.cloud.audit.proto.Query;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.concurrent.TimeUnit;
 
@@ -25,8 +27,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  **/
 @SpringBootTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = TestConfig.class)
-@ActiveProfiles({ "test", "flyway" })
+@ActiveProfiles({ "test" })
+@Testcontainers(parallel = true)
 class AuditServiceImplTest {
 
     @Autowired
