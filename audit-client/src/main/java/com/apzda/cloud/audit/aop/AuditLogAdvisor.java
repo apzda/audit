@@ -71,93 +71,94 @@ public class AuditLogAdvisor {
     }
 
     @Around("@annotation(com.apzda.cloud.audit.aop.AuditLog)")
-    public Object interceptor(ProceedingJoinPoint pjp) {
+    public Object interceptor(ProceedingJoinPoint pjp) throws Throwable {
         val args = pjp.getArgs();
-        try {
-            val signature = (MethodSignature) pjp.getSignature();
-            val method = signature.getMethod();
-            val ann = method.getAnnotation(AuditLog.class);
-            val activity = StringUtils.defaultIfBlank(ann.value(), ann.activity());
 
-            if (StringUtils.isBlank(activity)) {
-                throw new IllegalArgumentException("activity is blank");
-            }
+        val signature = (MethodSignature) pjp.getSignature();
+        val method = signature.getMethod();
+        val ann = method.getAnnotation(AuditLog.class);
+        val activity = StringUtils.defaultIfBlank(ann.value(), ann.activity());
 
-            val retObj = pjp.proceed(args);
-
-            val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
-            val tenantId = TenantManager.tenantId("0");
-            val request = GsvcContextHolder.getRequest();
-            var ip = "";
-            if (request.isPresent()) {
-                ip = request.get().getRemoteAddr();
-            }
-
-            val builder = com.apzda.cloud.audit.proto.AuditLog.newBuilder();
-            builder.setTimestamp(System.currentTimeMillis());
-            builder.setUserid(userId);
-            builder.setActivity(activity);
-            builder.setTenantId(tenantId);
-            builder.setIp(ip);
-            builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
-            val context = new StandardEvaluationContext(pjp.getTarget());
-            context.setVariable("returnObj", retObj);
-            val parameters = method.getParameters();
-            var i = 0;
-            for (Parameter parameter : parameters) {
-                val name = parameter.getName();
-                context.setVariable(name, args[i++]);
-            }
-
-            CompletableFuture.runAsync(() -> {
-                try {
-                    val template = ann.template();
-                    val message = ann.message();
-                    if (StringUtils.isNotBlank(message)) {
-                        val evaluate = message.startsWith("#{") && message.endsWith("}");
-                        if (evaluate) {
-                            val expression = expressionParser.parseExpression(message, parserContext);
-                            val msg = expression.getValue(context, String.class);
-                            builder.setMessage(msg);
-                        }
-                        else {
-                            builder.setMessage(message);
-                        }
-                    }
-                    else if (StringUtils.isNotBlank(template)) {
-                        builder.setTemplate(true);
-                        builder.setMessage(template);
-                        val arg = ann.args();
-                        var idx = 0;
-                        for (String value : arg) {
-                            val expression = expressionParser.parseExpression(value);
-                            builder.addArg(com.apzda.cloud.audit.proto.Arg.newBuilder()
-                                .setIndex(idx++)
-                                .setValue(expression.getValue(context, String.class)));
-                        }
-                    }
-                    val req = builder.build();
-                    val str = objectMapper.writeValueAsString(req);
-                    logger.info("Audit Event: {}", str);
-                    val rest = auditService.log(req);
-                    if (StringUtils.isNotBlank(rest.getErrMsg())) {
-                        log.warn("Cannot save audit log: {} - {}", str, rest.getErrMsg());
-                    }
-                }
-                catch (Exception e) {
-                    try {
-                        log.warn("Cannot send audit log: {} - {}", objectMapper.writeValueAsString(builder.build()),
-                                e.getMessage());
-                    }
-                    catch (JsonProcessingException e1) {
-                        log.warn("Cannot send audit log: {} - {}", builder.build(), e1.getMessage());
-                    }
-                }
-            });
-            return retObj;
+        if (StringUtils.isBlank(activity)) {
+            throw new IllegalArgumentException("activity is blank");
         }
-        catch (Throwable e) {
-            throw new RuntimeException(e);
+
+        val retObj = pjp.proceed(args);
+
+        val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
+        val tenantId = TenantManager.tenantId("0");
+        val ip = GsvcContextHolder.getRemoteIp();
+        val builder = com.apzda.cloud.audit.proto.AuditLog.newBuilder();
+
+        builder.setTimestamp(System.currentTimeMillis());
+        builder.setUserid(userId);
+        builder.setActivity(activity);
+        builder.setTenantId(tenantId);
+        builder.setIp(ip);
+        builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
+        val context = new StandardEvaluationContext(pjp.getTarget());
+        context.setVariable("returnObj", retObj);
+        val parameters = method.getParameters();
+        var i = 0;
+        for (Parameter parameter : parameters) {
+            val name = parameter.getName();
+            context.setVariable(name, args[i++]);
+        }
+        if (ann.async()) {
+            CompletableFuture.runAsync(() -> {
+                audit(ann, context, builder);
+            });
+        }
+        else {
+            audit(ann, context, builder);
+        }
+        return retObj;
+    }
+
+    private void audit(AuditLog ann, StandardEvaluationContext context,
+            com.apzda.cloud.audit.proto.AuditLog.Builder builder) {
+        try {
+            val template = ann.template();
+            val message = ann.message();
+            if (StringUtils.isNotBlank(message)) {
+                val evaluate = message.startsWith("#{") && message.endsWith("}");
+                if (evaluate) {
+                    val expression = expressionParser.parseExpression(message, parserContext);
+                    val msg = expression.getValue(context, String.class);
+                    builder.setMessage(msg);
+                }
+                else {
+                    builder.setMessage(message);
+                }
+            }
+            else if (StringUtils.isNotBlank(template)) {
+                builder.setTemplate(true);
+                builder.setMessage(template);
+                val arg = ann.args();
+                var idx = 0;
+                for (String value : arg) {
+                    val expression = expressionParser.parseExpression(value);
+                    builder.addArg(com.apzda.cloud.audit.proto.Arg.newBuilder()
+                        .setIndex(idx++)
+                        .setValue(expression.getValue(context, String.class)));
+                }
+            }
+            val req = builder.build();
+            val str = objectMapper.writeValueAsString(req);
+            logger.info("Audit Event: {}", str);
+            val rest = auditService.log(req);
+            if (StringUtils.isNotBlank(rest.getErrMsg())) {
+                log.warn("Cannot save audit log: {} - {}", str, rest.getErrMsg());
+            }
+        }
+        catch (Exception e) {
+            try {
+                log.warn("Cannot send audit log: {} - {}", objectMapper.writeValueAsString(builder.build()),
+                        e.getMessage());
+            }
+            catch (JsonProcessingException e1) {
+                log.warn("Cannot send audit log: {} - {}", builder.build(), e1.getMessage());
+            }
         }
     }
 

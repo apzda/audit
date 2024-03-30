@@ -41,4 +41,6 @@ public @interface AuditLog {
 
     String[] args() default {};
 
+    boolean async() default true;
+
 }
