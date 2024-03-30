@@ -7,7 +7,7 @@
         <version>1.2.12</version>
     </parent>
     <artifactId>audit</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Apzda Audit Logger</name>
     <description>Apzda Official Audit Logger module</description>
@@ -52,7 +52,7 @@
         <url>https://github.com/apzda/audit.git</url>
         <connection>scm:git@github.com:apzda/audit.git</connection>
         <developerConnection>scm:git:git@github.com:apzda/audit.git</developerConnection>
-        <tag>v1.0.1</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
@@ -73,17 +73,17 @@
             <dependency>
                 <groupId>com.apzda.cloud</groupId>
                 <artifactId>audit-proto</artifactId>
-                <version>1.0.1</version>
+                <version>1.0.2-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.apzda.cloud</groupId>
                 <artifactId>audit-client</artifactId>
-                <version>1.0.1</version>
+                <version>1.0.2-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.apzda.cloud</groupId>
                 <artifactId>audit-service</artifactId>
-                <version>1.0.1</version>
+                <version>1.0.2-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
