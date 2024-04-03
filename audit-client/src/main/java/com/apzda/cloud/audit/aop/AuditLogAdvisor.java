@@ -82,8 +82,14 @@ public class AuditLogAdvisor {
         if (StringUtils.isBlank(activity)) {
             throw new IllegalArgumentException("activity is blank");
         }
-
-        val retObj = pjp.proceed(args);
+        Object retObj = null;
+        Exception lastEx = null;
+        try {
+            retObj = pjp.proceed(args);
+        }
+        catch (Exception e) {
+            lastEx = e;
+        }
 
         val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
         val tenantId = TenantManager.tenantId("0");
@@ -98,6 +104,8 @@ public class AuditLogAdvisor {
         builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
         val context = new StandardEvaluationContext(pjp.getTarget());
         context.setVariable("returnObj", retObj);
+        context.setVariable("throwExp", lastEx);
+        context.setVariable("isThrow", lastEx != null);
         val parameters = method.getParameters();
         var i = 0;
         for (Parameter parameter : parameters) {
@@ -111,6 +119,9 @@ public class AuditLogAdvisor {
         }
         else {
             audit(ann, context, builder);
+        }
+        if (lastEx != null) {
+            throw lastEx;
         }
         return retObj;
     }
@@ -136,13 +147,19 @@ public class AuditLogAdvisor {
                 builder.setMessage(template);
                 val arg = ann.args();
                 var idx = 0;
+                var argVal = "";
                 for (String value : arg) {
-                    val expression = expressionParser.parseExpression(value);
-                    builder.addArg(com.apzda.cloud.audit.proto.Arg.newBuilder()
-                        .setIndex(idx++)
-                        .setValue(expression.getValue(context, String.class)));
+                    if (value.startsWith("#")) {
+                        val expression = expressionParser.parseExpression(value);
+                        argVal = expression.getValue(context, String.class);
+                    }
+                    else {
+                        argVal = value;
+                    }
+                    builder.addArg(com.apzda.cloud.audit.proto.Arg.newBuilder().setIndex(idx++).setValue(argVal));
                 }
             }
+
             val req = builder.build();
             val str = objectMapper.writeValueAsString(req);
             logger.info("Audit Event: {}", str);

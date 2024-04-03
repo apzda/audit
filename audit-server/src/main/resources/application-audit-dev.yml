@@ -9,6 +9,8 @@ spring:
     url: jdbc:mysql://localhost:3307/apzda_infra_db?characterEncoding=UTF-8&useUnicode=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: root
     password: Abc12332!
+  flyway:
+    baseline-on-migrate: true
   data:
     redis:
       database: 1
