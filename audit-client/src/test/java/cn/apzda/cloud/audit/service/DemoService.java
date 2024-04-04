@@ -37,12 +37,24 @@ public class DemoService {
         return builder.build();
     }
 
-    @AuditLog(activity = "test", template = "error message is {}, arg is {}", args = { "#returnObj.errMsg", "#msg" })
+    @AuditLog(activity = "test", template = "error message is {}, arg is {}", args = { "#returnObj?.errMsg", "#msg" })
     public GsvcExt.CommonRes hello(String msg) {
         val builder = GsvcExt.CommonRes.newBuilder();
         builder.setErrCode(1);
         builder.setErrMsg("error " + msg);
         return builder.build();
+    }
+
+    @AuditLog(activity = "test", template = "error message is {}, arg is {}", args = { "#returnObj?.errMsg", "#msg" },
+            error = "#{ 'Arg \"' + #msg + '\":' + #throwExp.message }")
+    public GsvcExt.CommonRes hello2(String msg) {
+        throw new RuntimeException(msg + " is invalid");
+    }
+
+    @AuditLog(activity = "test", errorTpl = "exception message is {}, arg is {}",
+            args = { "#throwExp?.message", "#msg" }, async = false)
+    public GsvcExt.CommonRes hello3(String msg) {
+        throw new RuntimeException(msg + " is invalid");
     }
 
 }

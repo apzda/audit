@@ -82,10 +82,10 @@ public class AuditLogAdvisor {
         if (StringUtils.isBlank(activity)) {
             throw new IllegalArgumentException("activity is blank");
         }
-        Object retObj = null;
+        Object returnObj = null;
         Exception lastEx = null;
         try {
-            retObj = pjp.proceed(args);
+            returnObj = pjp.proceed(args);
         }
         catch (Exception e) {
             lastEx = e;
@@ -101,9 +101,14 @@ public class AuditLogAdvisor {
         builder.setActivity(activity);
         builder.setTenantId(tenantId);
         builder.setIp(ip);
-        builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
+        if (lastEx == null) {
+            builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
+        }
+        else {
+            builder.setLevel("error");
+        }
         val context = new StandardEvaluationContext(pjp.getTarget());
-        context.setVariable("returnObj", retObj);
+        context.setVariable("returnObj", returnObj);
         context.setVariable("throwExp", lastEx);
         context.setVariable("isThrow", lastEx != null);
         val parameters = method.getParameters();
@@ -113,30 +118,53 @@ public class AuditLogAdvisor {
             context.setVariable(name, args[i++]);
         }
         if (ann.async()) {
+            val throwObj = lastEx;
             CompletableFuture.runAsync(() -> {
-                audit(ann, context, builder);
+                audit(ann, context, builder, throwObj);
             });
         }
         else {
-            audit(ann, context, builder);
+            audit(ann, context, builder, lastEx);
         }
         if (lastEx != null) {
             throw lastEx;
         }
-        return retObj;
+        return returnObj;
     }
 
     private void audit(AuditLog ann, StandardEvaluationContext context,
-            com.apzda.cloud.audit.proto.AuditLog.Builder builder) {
+            com.apzda.cloud.audit.proto.AuditLog.Builder builder, Exception lastEx) {
         try {
-            val template = ann.template();
-            val message = ann.message();
+            var template = ann.template();
+            var message = ann.message();
+            if (lastEx != null) {
+                val error = ann.error();
+                if (StringUtils.isBlank(error)) {
+                    val errTpl = ann.errorTpl();
+                    if (StringUtils.isBlank(errTpl)) {
+                        message = lastEx.getMessage();
+                    }
+                    else {
+                        template = errTpl;
+                    }
+                }
+                else {
+                    message = error;
+                }
+            }
+
             if (StringUtils.isNotBlank(message)) {
                 val evaluate = message.startsWith("#{") && message.endsWith("}");
                 if (evaluate) {
-                    val expression = expressionParser.parseExpression(message, parserContext);
-                    val msg = expression.getValue(context, String.class);
-                    builder.setMessage(msg);
+                    try {
+                        val expression = expressionParser.parseExpression(message, parserContext);
+                        val msg = expression.getValue(context, String.class);
+                        builder.setMessage(msg);
+                    }
+                    catch (Exception e) {
+                        builder.setLevel("warn");
+                        builder.setMessage(e.getMessage());
+                    }
                 }
                 else {
                     builder.setMessage(message);

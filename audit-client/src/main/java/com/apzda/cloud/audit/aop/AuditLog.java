@@ -37,7 +37,11 @@ public @interface AuditLog {
 
     String message() default "";
 
+    String error() default "";
+
     String template() default "";
+
+    String errorTpl() default "";
 
     String[] args() default {};
 

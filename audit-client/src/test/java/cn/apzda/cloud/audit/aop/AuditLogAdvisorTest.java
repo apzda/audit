@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -137,6 +138,53 @@ public class AuditLogAdvisorTest {
         assertThat(map.get(1)).isEqualTo("hi");
         assertThat(map.get(0)).isEqualTo("error hi");
         assertThat(map.get(3)).isEqualTo("true");
+    }
+
+    @Test
+    void advisor_should_be_work_ok4() throws InterruptedException {
+        // given
+        val map = new HashMap<Integer, String>();
+        given(auditService.log(any())).willAnswer((invocation) -> {
+            val argument = invocation.getArgument(0, AuditLog.class);
+            map.put(0, argument.getMessage());
+            return GsvcExt.CommonRes.newBuilder().build();
+        });
+        // when
+        assertThatThrownBy(() -> {
+            demoService.hello2("hi");
+        }).hasMessage("hi is invalid");
+        // when
+        TimeUnit.MILLISECONDS.sleep(500);
+        // then
+        assertThat(map).isNotEmpty();
+        assertThat(map.get(0)).isEqualTo("Arg \"hi\":hi is invalid");
+    }
+
+    @Test
+    void advisor_should_be_work_ok5() throws InterruptedException {
+        // given
+        val map = new HashMap<Integer, String>();
+        given(auditService.log(any())).willAnswer((invocation) -> {
+            val argument = invocation.getArgument(0, AuditLog.class);
+            map.put(argument.getArg(0).getIndex(), argument.getArg(0).getValue());
+            map.put(argument.getArg(1).getIndex(), argument.getArg(1).getValue());
+            map.put(3, argument.getMessage());
+            map.put(4, String.valueOf(argument.getTemplate()));
+            map.put(5, argument.getLevel());
+            return GsvcExt.CommonRes.newBuilder().build();
+        });
+        // when
+        assertThatThrownBy(() -> {
+            demoService.hello3("hi");
+        }).hasMessage("hi is invalid");
+        // then
+        assertThat(map).isNotEmpty();
+        assertThat(map).containsKeys(0, 1);
+        assertThat(map.get(0)).isEqualTo("hi is invalid");
+        assertThat(map.get(1)).isEqualTo("hi");
+        assertThat(map.get(3)).isEqualTo("exception message is {}, arg is {}");
+        assertThat(map.get(4)).isEqualTo("true");
+        assertThat(map.get(5)).isEqualTo("error");
     }
 
 }
