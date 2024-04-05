@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author fengz (windywany@gmail.com)
@@ -119,7 +120,7 @@ public class AuditServiceImpl implements AuditService {
             val newValue = lg.getNewValue();
             val oldValue = lg.getOldValue();
             val bd = AuditLog.newBuilder();
-            bd.setId(lg.getId());
+            bd.setId(Objects.requireNonNull(lg.getId()));
             bd.setTimestamp(lg.getLogTime());
             bd.setUserid(lg.getUserId());
             bd.setActivity(lg.getActivity());
