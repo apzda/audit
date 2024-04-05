@@ -185,6 +185,7 @@ public class AuditLogAdvisor {
                     else {
                         argVal = value;
                     }
+                    argVal = StringUtils.defaultIfBlank(argVal, "");
                     builder.addArg(com.apzda.cloud.audit.proto.Arg.newBuilder().setIndex(idx++).setValue(argVal));
                 }
             }
