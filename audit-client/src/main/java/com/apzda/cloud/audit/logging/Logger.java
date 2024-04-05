@@ -129,25 +129,31 @@ public class Logger {
 
     public void log() {
         CompletableFuture.runAsync(() -> {
-            try {
-                val req = builder.build();
-                val str = objectMapper.writeValueAsString(req);
-                logger.info("Audit Event: {}", str);
-                val rest = auditService.log(req);
-                if (StringUtils.isNotBlank(rest.getErrMsg())) {
-                    log.warn("Cannot save audit log: {} - {}", str, rest.getErrMsg());
-                }
-            }
-            catch (Exception e) {
-                try {
-                    log.warn("Cannot send audit log: {} - {}", objectMapper.writeValueAsString(builder.build()),
-                            e.getMessage());
-                }
-                catch (JsonProcessingException e1) {
-                    log.warn("Cannot send audit log: {} - {}", builder.build(), e1.getMessage());
-                }
-            }
+            log(auditService, objectMapper, builder);
         });
+    }
+
+    public static void log(AuditService auditService, ObjectMapper objectMapper, AuditLog.Builder builder) {
+        try {
+            val req = builder.build();
+            val str = objectMapper.writeValueAsString(req);
+            logger.info("Audit Event: {}", str);
+            val rest = auditService.log(req);
+            if (StringUtils.isNotBlank(rest.getErrMsg())) {
+                log.warn("Cannot save audit log: {} - {}", str, rest.getErrMsg());
+            }
+        }
+        catch (JsonProcessingException e1) {
+            log.warn("Cannot serialize audit log: {} - {}", builder.build(), e1.getMessage());
+        }
+        catch (Exception e) {
+            try {
+                log.warn("Cannot send audit log: {} - {}", objectMapper.writeValueAsString(builder.build()),
+                        e.getMessage());
+            }
+            catch (JsonProcessingException ignored) {
+            }
+        }
     }
 
 }

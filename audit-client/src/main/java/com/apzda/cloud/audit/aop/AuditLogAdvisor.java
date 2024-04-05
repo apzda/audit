@@ -21,7 +21,6 @@ import com.apzda.cloud.gsvc.context.CurrentUserProvider;
 import com.apzda.cloud.gsvc.context.TenantManager;
 import com.apzda.cloud.gsvc.core.GsvcContextHolder;
 import com.apzda.cloud.gsvc.utils.ResponseUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -30,8 +29,6 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParserContext;
@@ -54,8 +51,6 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Order
 public class AuditLogAdvisor {
-
-    private static final Logger logger = LoggerFactory.getLogger("audit");
 
     private final ExpressionParser expressionParser = new SpelExpressionParser();
 
@@ -178,8 +173,14 @@ public class AuditLogAdvisor {
                 var argVal = "";
                 for (String value : arg) {
                     if (value.startsWith("#")) {
-                        val expression = expressionParser.parseExpression(value);
-                        argVal = expression.getValue(context, String.class);
+                        try {
+                            val expression = expressionParser.parseExpression(value);
+                            argVal = expression.getValue(context, String.class);
+                        }
+                        catch (Exception e) {
+                            log.warn("Cannot parse arg: {}", value);
+                            argVal = value;
+                        }
                     }
                     else {
                         argVal = value;
@@ -188,21 +189,14 @@ public class AuditLogAdvisor {
                 }
             }
 
-            val req = builder.build();
-            val str = objectMapper.writeValueAsString(req);
-            logger.info("Audit Event: {}", str);
-            val rest = auditService.log(req);
-            if (StringUtils.isNotBlank(rest.getErrMsg())) {
-                log.warn("Cannot save audit log: {} - {}", str, rest.getErrMsg());
-            }
+            com.apzda.cloud.audit.logging.Logger.log(auditService, objectMapper, builder);
         }
         catch (Exception e) {
             try {
                 log.warn("Cannot send audit log: {} - {}", objectMapper.writeValueAsString(builder.build()),
-                        e.getMessage());
+                        e.getMessage(), e);
             }
-            catch (JsonProcessingException e1) {
-                log.warn("Cannot send audit log: {} - {}", builder.build(), e1.getMessage());
+            catch (Exception ignored) {
             }
         }
     }
