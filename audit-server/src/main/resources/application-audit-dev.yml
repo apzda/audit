@@ -3,16 +3,18 @@ server:
 
 spring:
   application:
-    name: uc-service
+    name: audit-service
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3307/apzda_infra_db?characterEncoding=UTF-8&useUnicode=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: root
     password: Abc12332!
-  flyway:
-    baseline-on-migrate: true
+  jpa:
+    show-sql: true
+
   data:
     redis:
+      host: localhost
       database: 1
       lettuce:
         pool:

@@ -4,9 +4,24 @@ server:
 spring:
   application:
     name: audit-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql:3306/apzda_infra_db?characterEncoding=UTF-8&useUnicode=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: Abc12332!
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: false
+  data:
+    redis:
+      host: redis
+      database: 1
+      lettuce:
+        pool:
+          enabled: true
 
-apzda:
-  cloud:
-    reference:
-      AuditService:
-        svc-name: http://localhost:8081
+logging:
+  level:
+    com.apzda.cloud: info

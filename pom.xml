@@ -5,7 +5,7 @@
     <parent>
         <artifactId>apzda-cloud-gsvc-parent</artifactId>
         <groupId>com.apzda.cloud</groupId>
-        <version>1.2.12</version>
+        <version>1.2.13-SNAPSHOT</version>
     </parent>
     <artifactId>audit</artifactId>
     <version>1.0.2-SNAPSHOT</version>
