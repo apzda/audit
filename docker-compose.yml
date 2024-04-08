@@ -1,7 +1,7 @@
 #version: "3.8"
 services:
   audit-service:
-    image: apzda/${SERVICE_NAME}-server:${SERVICE_VER}
+    image: apzda/${SERVICE_NAME}-server:latest
     build:
       context: ${SERVICE_NAME}-server/target
       dockerfile: ../Dockerfile
