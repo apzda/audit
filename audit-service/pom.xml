@@ -15,10 +15,12 @@
             <artifactId>audit-client</artifactId>
         </dependency>
         <!-- apzda services -->
+        <!--
         <dependency>
             <groupId>com.apzda.cloud</groupId>
             <artifactId>uc-client</artifactId>
         </dependency>
+        -->
         <!-- gsvc -->
         <dependency>
             <groupId>com.apzda.cloud</groupId>

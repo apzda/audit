@@ -89,12 +89,13 @@
                 <artifactId>audit-service</artifactId>
                 <version>1.0.2-SNAPSHOT</version>
             </dependency>
-
+            <!--
             <dependency>
                 <groupId>com.apzda.cloud</groupId>
                 <artifactId>uc-client</artifactId>
                 <version>${apzda.uc.version}</version>
             </dependency>
+            -->
         </dependencies>
     </dependencyManagement>
 
