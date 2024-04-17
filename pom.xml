@@ -5,7 +5,7 @@
     <parent>
         <artifactId>apzda-cloud-gsvc-parent</artifactId>
         <groupId>com.apzda.cloud</groupId>
-        <version>1.2.13-SNAPSHOT</version>
+        <version>1.2.18</version>
     </parent>
     <artifactId>audit</artifactId>
     <version>1.0.2-SNAPSHOT</version>
@@ -111,22 +111,9 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <tagNameFormat>v@{project.version}</tagNameFormat>
                         <generateReleasePoms>false</generateReleasePoms>
-                        <useReleaseProfile>false</useReleaseProfile>
                         <releaseProfiles>release</releaseProfiles>
                         <arguments>-Dmaven.site.skip=true</arguments>
-                        <goals>deploy</goals>
-                    </configuration>
-                </plugin>
-                <!-- nexus-staging-maven-plugin -->
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.13</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <serverId>ossrh</serverId>
-                        <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        <goals>clean install</goals>
                     </configuration>
                 </plugin>
             </plugins>
@@ -139,10 +126,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
