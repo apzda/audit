@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>apzda-cloud-gsvc-parent</artifactId>
         <groupId>com.apzda.cloud</groupId>
-        <version>1.2.18</version>
+        <version>1.2.19</version>
     </parent>
     <artifactId>audit</artifactId>
     <version>1.0.3-SNAPSHOT</version>
@@ -98,26 +99,24 @@
         </dependencies>
     </dependencyManagement>
 
+    <repositories>
+        <repository>
+            <id>ossrh</id>
+            <name>OSS Repository Host</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+                <checksumPolicy>fail</checksumPolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <build>
-        <pluginManagement>
-            <plugins>
-                <!-- maven-release-plugin -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>3.0.0</version>
-                    <configuration>
-                        <preparationGoals>clean verify</preparationGoals>
-                        <autoVersionSubmodules>true</autoVersionSubmodules>
-                        <tagNameFormat>v@{project.version}</tagNameFormat>
-                        <generateReleasePoms>false</generateReleasePoms>
-                        <releaseProfiles>release</releaseProfiles>
-                        <arguments>-Dmaven.site.skip=true</arguments>
-                        <goals>clean install</goals>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.spring.javaformat</groupId>
