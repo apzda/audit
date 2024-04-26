@@ -7,10 +7,14 @@ import com.apzda.cloud.audit.proto.AuditLog;
 import com.apzda.cloud.audit.proto.AuditService;
 import com.apzda.cloud.gsvc.ext.GsvcExt;
 import com.apzda.cloud.gsvc.utils.ResponseUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -34,8 +38,8 @@ import static org.mockito.BDDMockito.given;
  **/
 @SpringBootTest
 @ContextConfiguration(classes = AuditApp.class)
-@ImportAutoConfiguration(
-        classes = { AuditAutoConfiguration.class, AopAutoConfiguration.class, SecurityAutoConfiguration.class })
+@ImportAutoConfiguration({ AuditAutoConfiguration.class, AopAutoConfiguration.class, SecurityAutoConfiguration.class,
+        ObservationAutoConfiguration.class })
 @ComponentScan(basePackages = { "cn.apzda.cloud.audit" })
 @TestPropertySource(properties = { "logging.level.com.apzda.cloud=trace" })
 class LoggerTest {
@@ -46,9 +50,17 @@ class LoggerTest {
     @Autowired
     private AuditLogger logger;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @BeforeAll
     static void setup() {
         ResponseUtils.config();
+    }
+
+    @BeforeEach
+    void setupMapper() {
+        objectMapper.registerModule(new ProtobufModule());
     }
 
     @Test

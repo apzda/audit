@@ -24,8 +24,11 @@ import com.apzda.cloud.audit.proto.AuditLog;
 import com.apzda.cloud.audit.proto.AuditService;
 import com.apzda.cloud.gsvc.ext.GsvcExt;
 import com.apzda.cloud.gsvc.utils.ResponseUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hubspot.jackson.datatype.protobuf.ProtobufModule;
 import lombok.val;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -64,12 +67,20 @@ public class AuditLogAdvisorTest {
     @Autowired
     private DemoService demoService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @MockBean
     private AuditService auditService;
 
     @BeforeAll
     static void setup() {
         ResponseUtils.config();
+    }
+
+    @BeforeEach
+    void setupMapper() {
+        objectMapper.registerModule(new ProtobufModule());
     }
 
     @Test
