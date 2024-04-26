@@ -113,14 +113,19 @@ public class AuditLogAdvisor {
             context.setVariable(name, args[i++]);
         }
         if (ann.async()) {
-            val gsvcContext = GsvcContextHolder.current();
+            val gsvcContext = GsvcContextHolder.getContext();
             val throwObj = lastEx;
             CompletableFuture.runAsync(() -> {
-                gsvcContext.restore();
-                val observation = Observation.createNotStarted("async", this.observationRegistry);
-                observation.observe(() -> {
-                    audit(ann, context, builder, throwObj);
-                });
+                try {
+                    gsvcContext.restore();
+                    val observation = Observation.createNotStarted("async", this.observationRegistry);
+                    observation.observe(() -> {
+                        audit(ann, context, builder, throwObj);
+                    });
+                }
+                finally {
+                    GsvcContextHolder.clear();
+                }
             });
         }
         else {

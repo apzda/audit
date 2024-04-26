@@ -131,13 +131,18 @@ public class Logger {
     }
 
     public void log() {
-        val context = GsvcContextHolder.current();
+        val context = GsvcContextHolder.getContext();
         val observation = Observation.createNotStarted("async", this.observationRegistry);
         CompletableFuture.runAsync(() -> {
-            context.restore();
-            observation.observe(() -> {
-                log(auditService, objectMapper, builder);
-            });
+            try {
+                context.restore();
+                observation.observe(() -> {
+                    log(auditService, objectMapper, builder);
+                });
+            }
+            finally {
+                GsvcContextHolder.clear();
+            }
         });
     }
 
