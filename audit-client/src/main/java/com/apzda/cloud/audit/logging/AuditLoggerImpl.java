@@ -17,7 +17,8 @@
 package com.apzda.cloud.audit.logging;
 
 import com.apzda.cloud.audit.proto.AuditService;
-import com.apzda.cloud.gsvc.utils.ResponseUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
@@ -31,12 +32,16 @@ public class AuditLoggerImpl implements AuditLogger {
 
     private final AuditService auditService;
 
+    private final ObjectMapper objectMapper;
+
+    private final ObservationRegistry observationRegistry;
+
     @Override
     public Logger activity(String activity) {
         if (StringUtils.isBlank(activity)) {
             throw new IllegalArgumentException("activity is blank");
         }
-        return new Logger(auditService, ResponseUtils.OBJECT_MAPPER, activity);
+        return new Logger(auditService, objectMapper, activity, observationRegistry);
     }
 
 }

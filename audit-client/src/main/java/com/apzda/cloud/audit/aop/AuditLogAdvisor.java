@@ -20,8 +20,10 @@ import com.apzda.cloud.audit.proto.AuditService;
 import com.apzda.cloud.gsvc.context.CurrentUserProvider;
 import com.apzda.cloud.gsvc.context.TenantManager;
 import com.apzda.cloud.gsvc.core.GsvcContextHolder;
-import com.apzda.cloud.gsvc.utils.ResponseUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +52,7 @@ import java.util.concurrent.CompletableFuture;
 @Aspect
 @Slf4j
 @Order
+@RequiredArgsConstructor
 public class AuditLogAdvisor {
 
     private final ExpressionParser expressionParser = new SpelExpressionParser();
@@ -60,10 +63,7 @@ public class AuditLogAdvisor {
 
     private final ObjectMapper objectMapper;
 
-    public AuditLogAdvisor(AuditService auditService) {
-        this.auditService = auditService;
-        this.objectMapper = ResponseUtils.OBJECT_MAPPER;
-    }
+    private final ObservationRegistry observationRegistry;
 
     @Around("@annotation(com.apzda.cloud.audit.aop.AuditLog)")
     public Object interceptor(ProceedingJoinPoint pjp) throws Throwable {
@@ -113,9 +113,14 @@ public class AuditLogAdvisor {
             context.setVariable(name, args[i++]);
         }
         if (ann.async()) {
+            val gsvcContext = GsvcContextHolder.current();
             val throwObj = lastEx;
             CompletableFuture.runAsync(() -> {
-                audit(ann, context, builder, throwObj);
+                gsvcContext.restore();
+                val observation = Observation.createNotStarted("async", this.observationRegistry);
+                observation.observe(() -> {
+                    audit(ann, context, builder, throwObj);
+                });
             });
         }
         else {

@@ -20,6 +20,8 @@ import com.apzda.cloud.audit.logging.AuditLogger;
 import com.apzda.cloud.audit.logging.AuditLoggerImpl;
 import com.apzda.cloud.audit.proto.AuditService;
 import com.apzda.cloud.audit.proto.AuditServiceGsvc;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -36,8 +38,9 @@ public class AuditAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    AuditLogger auditLogger(AuditService auditService) {
-        return new AuditLoggerImpl(auditService);
+    AuditLogger auditLogger(AuditService auditService, ObservationRegistry observationRegistry,
+            ObjectMapper objectMapper) {
+        return new AuditLoggerImpl(auditService, objectMapper, observationRegistry);
     }
 
 }

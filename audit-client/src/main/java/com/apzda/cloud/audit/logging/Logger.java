@@ -24,6 +24,8 @@ import com.apzda.cloud.gsvc.context.TenantManager;
 import com.apzda.cloud.gsvc.core.GsvcContextHolder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
@@ -50,18 +52,19 @@ public class Logger {
 
     private final AuditLog.Builder builder;
 
-    public Logger(AuditService auditService, ObjectMapper objectMapper, @NonNull String activity) {
+    private final ObservationRegistry observationRegistry;
+
+    public Logger(AuditService auditService, ObjectMapper objectMapper, @NonNull String activity,
+            ObservationRegistry observationRegistry) {
         this.auditService = auditService;
         this.objectMapper = objectMapper;
+        this.observationRegistry = observationRegistry;
         this.builder = AuditLog.newBuilder();
 
         val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
         val tenantId = TenantManager.tenantId("0");
-        val request = GsvcContextHolder.getRequest();
-        var ip = "";
-        if (request.isPresent()) {
-            ip = request.get().getRemoteAddr();
-        }
+        var ip = GsvcContextHolder.getRemoteIp();
+
         this.builder.setActivity(activity)
             .setUserid(userId)
             .setTenantId(tenantId)
@@ -128,9 +131,23 @@ public class Logger {
     }
 
     public void log() {
+        val context = GsvcContextHolder.current();
+        val observation = Observation.createNotStarted("async", this.observationRegistry);
         CompletableFuture.runAsync(() -> {
-            log(auditService, objectMapper, builder);
+            context.restore();
+            observation.observe(() -> {
+                log(auditService, objectMapper, builder);
+            });
         });
+    }
+
+    public void log(boolean async) {
+        if (async) {
+            log();
+        }
+        else {
+            log(auditService, objectMapper, builder);
+        }
     }
 
     public static void log(AuditService auditService, ObjectMapper objectMapper, AuditLog.Builder builder) {
