@@ -56,7 +56,7 @@ class AuditServiceImplTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", authorities = { "view:auditlog" })
+    @WithMockUser(username = "admin", authorities = { "r:auditlog" })
     void logs() throws InterruptedException {
         // when
         val req = Query.newBuilder().build();
