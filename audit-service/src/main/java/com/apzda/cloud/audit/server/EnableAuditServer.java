@@ -32,7 +32,7 @@ import java.lang.annotation.*;
  **/
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@PropertySource("classpath:apzda.audit.service.properties")
+@PropertySource("classpath:apzda.audit.service.yaml")
 @Import({ AuditServiceGsvc.class })
 @ComponentScan(basePackages = { "com.apzda.cloud.audit.facade", "com.apzda.cloud.audit.domain" })
 @EnableJpaRepositories(basePackages = { "com.apzda.cloud.audit.domain.repository" })

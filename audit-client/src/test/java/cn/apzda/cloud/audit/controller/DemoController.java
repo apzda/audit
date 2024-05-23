@@ -16,8 +16,12 @@
  */
 package cn.apzda.cloud.audit.controller;
 
+import com.apzda.cloud.audit.aop.AuditContextHolder;
 import com.apzda.cloud.audit.aop.AuditLog;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -30,7 +34,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemoController {
 
     @AuditLog(activity = "test", message = "#{'you are get then id is: ' + #id +', then result is:' + #returnObj }")
-    public String shouldBeAudited(String id) {
+    @GetMapping("/audit/{id}")
+    public String shouldBeAudited(@PathVariable String id) {
+        return shouldBeAudited1(id);
+    }
+
+    @AuditLog(activity = "test", message = "#{'new = '+ #new}")
+    public String shouldBeAudited1(String id) {
+        val context = AuditContextHolder.getContext();
+        context.setNewValue("1");
+        return shouldBeAudited2(id);
+    }
+
+    @AuditLog(activity = "test", message = "#{'old = ' + #old}")
+    public String shouldBeAudited2(String id) {
+        val context = AuditContextHolder.getContext();
+        context.setOldValue("2");
         return "hello ya:" + id;
     }
 

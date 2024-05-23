@@ -34,12 +34,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -53,12 +56,13 @@ import static org.mockito.BDDMockito.given;
  * @version 1.0.0
  * @since 1.0.0
  **/
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(classes = AuditApp.class)
 @ImportAutoConfiguration(
         classes = { AuditAutoConfiguration.class, AopAutoConfiguration.class, SecurityAutoConfiguration.class })
 @ComponentScan(basePackages = { "cn.apzda.cloud.audit" })
 @TestPropertySource(properties = { "logging.level.com.apzda.cloud=trace" })
+@AutoConfigureMockMvc
 public class AuditLogAdvisorTest {
 
     @Autowired
@@ -86,10 +90,10 @@ public class AuditLogAdvisorTest {
     @Test
     void advisor_should_be_work_ok() throws InterruptedException {
         // given
-        val map = new HashMap<String, String>();
+        val map = new ArrayList<String>();
         given(auditService.log(any())).willAnswer((invocation) -> {
             val argument = invocation.getArgument(0, AuditLog.class);
-            map.put("message", argument.getMessage());
+            map.add(argument.getMessage());
             return GsvcExt.CommonRes.newBuilder().build();
         });
         // when
@@ -100,8 +104,8 @@ public class AuditLogAdvisorTest {
         TimeUnit.MILLISECONDS.sleep(500);
         // then
         assertThat(map).isNotEmpty();
-        assertThat(map).containsKeys("message");
-        assertThat(map.get("message")).isEqualTo("you are get then id is: 123, then result is:hello ya:123");
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.get(0)).isEqualTo("you are get then id is: 123, then result is:hello ya:123");
 
     }
 
@@ -196,6 +200,38 @@ public class AuditLogAdvisorTest {
         assertThat(map.get(3)).isEqualTo("exception message is {}, arg is {}");
         assertThat(map.get(4)).isEqualTo("true");
         assertThat(map.get(5)).isEqualTo("error");
+    }
+
+    @Test
+    void advisor_should_be_work_ok6(@Autowired WebTestClient webClient) throws Exception {
+        webClient.get()
+            .uri("/audit/1")
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(String.class)
+            .isEqualTo("hello ya:1");
+    }
+
+    @Test
+    void advisor_should_be_work_ok7() throws InterruptedException {
+        // given
+        val map = new ArrayList<String>();
+        given(auditService.log(any())).willAnswer((invocation) -> {
+            val argument = invocation.getArgument(0, AuditLog.class);
+            map.add(argument.getMessage());
+            return GsvcExt.CommonRes.newBuilder().build();
+        });
+        // when
+        val str = demoController.shouldBeAudited1("123");
+        // then
+        assertThat(str).isEqualTo("hello ya:123");
+        // when
+        TimeUnit.MILLISECONDS.sleep(500);
+        // then
+        assertThat(map).isNotEmpty();
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(map.get(0)).isEqualTo("new = 1");
     }
 
 }

@@ -68,73 +68,84 @@ public class AuditLogAdvisor {
     @Around("@annotation(com.apzda.cloud.audit.aop.AuditLog)")
     public Object interceptor(ProceedingJoinPoint pjp) throws Throwable {
         val args = pjp.getArgs();
-
         val signature = (MethodSignature) pjp.getSignature();
         val method = signature.getMethod();
         val ann = method.getAnnotation(AuditLog.class);
         val activity = StringUtils.defaultIfBlank(ann.value(), ann.activity());
-
-        if (StringUtils.isBlank(activity)) {
-            throw new IllegalArgumentException("activity is blank");
-        }
-        Object returnObj = null;
-        Exception lastEx = null;
+        val oldContext = AuditContextHolder.getContext();
         try {
-            returnObj = pjp.proceed(args);
-        }
-        catch (Exception e) {
-            lastEx = e;
-        }
+            if (StringUtils.isBlank(activity)) {
+                throw new IllegalArgumentException("activity is blank");
+            }
+            AuditContextHolder.create();
+            Object returnObj = null;
+            Exception lastEx = null;
+            try {
+                returnObj = pjp.proceed(args);
+            }
+            catch (Exception e) {
+                lastEx = e;
+            }
 
-        val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
-        val tenantId = TenantManager.tenantId("0");
-        val ip = GsvcContextHolder.getRemoteIp();
-        val builder = com.apzda.cloud.audit.proto.AuditLog.newBuilder();
+            val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
+            val tenantId = TenantManager.tenantId("0");
+            val ip = GsvcContextHolder.getRemoteIp();
+            val builder = com.apzda.cloud.audit.proto.AuditLog.newBuilder();
 
-        builder.setTimestamp(System.currentTimeMillis());
-        builder.setUserid(userId);
-        builder.setActivity(activity);
-        builder.setTenantId(tenantId);
-        builder.setIp(ip);
-        if (lastEx == null) {
-            builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
+            builder.setTimestamp(System.currentTimeMillis());
+            builder.setUserid(userId);
+            builder.setActivity(activity);
+            builder.setTenantId(tenantId);
+            builder.setIp(ip);
+            if (lastEx == null) {
+                builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
+            }
+            else {
+                builder.setLevel("error");
+            }
+            val ctx = AuditContextHolder.getContext();
+            ;
+            val context = new StandardEvaluationContext(pjp.getTarget());
+            context.setVariable("returnObj", returnObj);
+            context.setVariable("throwExp", transform(lastEx));
+            context.setVariable("isThrow", lastEx != null);
+            context.setVariable("new", ctx.getNewValue());
+            context.setVariable("old", ctx.getOldValue());
+            context.setVariable("data", ctx.getData());
+
+            val parameters = method.getParameters();
+            var i = 0;
+            for (Parameter parameter : parameters) {
+                val name = parameter.getName();
+                context.setVariable(name, args[i++]);
+            }
+            if (ann.async()) {
+                val gsvcContext = GsvcContextHolder.getContext();
+                val throwObj = lastEx;
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        gsvcContext.restore();
+                        val observation = Observation.createNotStarted("async", this.observationRegistry);
+                        observation.observe(() -> {
+                            audit(ann, context, builder, throwObj);
+                        });
+                    }
+                    finally {
+                        GsvcContextHolder.clear();
+                    }
+                });
+            }
+            else {
+                audit(ann, context, builder, lastEx);
+            }
+            if (lastEx != null) {
+                throw lastEx;
+            }
+            return returnObj;
         }
-        else {
-            builder.setLevel("error");
+        finally {
+            AuditContextHolder.restore(oldContext);
         }
-        val context = new StandardEvaluationContext(pjp.getTarget());
-        context.setVariable("returnObj", returnObj);
-        context.setVariable("throwExp", lastEx);
-        context.setVariable("isThrow", lastEx != null);
-        val parameters = method.getParameters();
-        var i = 0;
-        for (Parameter parameter : parameters) {
-            val name = parameter.getName();
-            context.setVariable(name, args[i++]);
-        }
-        if (ann.async()) {
-            val gsvcContext = GsvcContextHolder.getContext();
-            val throwObj = lastEx;
-            CompletableFuture.runAsync(() -> {
-                try {
-                    gsvcContext.restore();
-                    val observation = Observation.createNotStarted("async", this.observationRegistry);
-                    observation.observe(() -> {
-                        audit(ann, context, builder, throwObj);
-                    });
-                }
-                finally {
-                    GsvcContextHolder.clear();
-                }
-            });
-        }
-        else {
-            audit(ann, context, builder, lastEx);
-        }
-        if (lastEx != null) {
-            throw lastEx;
-        }
-        return returnObj;
     }
 
     private void audit(AuditLog ann, StandardEvaluationContext context,
@@ -210,6 +221,23 @@ public class AuditLogAdvisor {
             catch (Exception ignored) {
             }
         }
+    }
+
+    private Throwable transform(Throwable e) {
+        if (e == null) {
+            return e;
+        }
+        do {
+            val message = e.getMessage();
+            if (StringUtils.isNotBlank(message)) {
+                return e;
+            }
+            if (e.getCause() == null) {
+                return e;
+            }
+            e = e.getCause();
+        }
+        while (true);
     }
 
 }

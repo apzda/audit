@@ -86,7 +86,7 @@ public class AuditServiceImpl implements AuditService {
     }
 
     @Override
-    @PreAuthorize("hasAuthority('view:auditlog')")
+    @PreAuthorize("@authz.iCan('r:auditlog')")
     public QueryRes logs(Query request) {
         val pager = request.getPager();
         val pr = PagerUtils.of(pager);
