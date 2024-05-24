@@ -55,7 +55,7 @@ public class AuditLog implements Auditable<Long, String, Long>, Tenantable<Strin
 
     private boolean deleted;
 
-    private boolean template;
+    private Boolean template;
 
     private String userId;
 
@@ -63,9 +63,13 @@ public class AuditLog implements Auditable<Long, String, Long>, Tenantable<Strin
 
     private String activity;
 
+    private String runas;
+
     private String level;
 
     private String ip;
+
+    private String device;
 
     private String message;
 

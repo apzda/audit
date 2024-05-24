@@ -39,14 +39,14 @@ public class DemoController {
         return shouldBeAudited1(id);
     }
 
-    @AuditLog(activity = "test", message = "#{'new = '+ #new}")
+    @AuditLog(activity = "test", message = "#{'new = '+ #newValue}")
     public String shouldBeAudited1(String id) {
         val context = AuditContextHolder.getContext();
         context.setNewValue("1");
         return shouldBeAudited2(id);
     }
 
-    @AuditLog(activity = "test", message = "#{'old = ' + #old}")
+    @AuditLog(activity = "test", message = "#{'old = ' + #oldValue}")
     public String shouldBeAudited2(String id) {
         val context = AuditContextHolder.getContext();
         context.setOldValue("2");

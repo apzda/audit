@@ -65,6 +65,12 @@ public class AuditServiceImpl implements AuditService {
         entity.setIp(request.getIp());
         entity.setMessage(request.getMessage());
         entity.setTemplate(request.getTemplate());
+        if (request.hasRunas()) {
+            entity.setRunas(request.getRunas());
+        }
+        if (request.hasDevice()) {
+            entity.setDevice(request.getDevice());
+        }
         entity.setLevel(StringUtils.defaultIfBlank(request.getLevel(), "info"));
         if (request.getArgCount() > 0) {
             try {
@@ -74,8 +80,12 @@ public class AuditServiceImpl implements AuditService {
                 log.warn("Cannot serialize args: {}", request.getArgList());
             }
         }
-        entity.setOldValue(request.getOldJsonValue());
-        entity.setNewValue(request.getNewJsonValue());
+        if (request.hasOldJsonValue()) {
+            entity.setOldValue(request.getOldJsonValue());
+        }
+        if (request.hasNewJsonValue()) {
+            entity.setNewValue(request.getNewJsonValue());
+        }
         val mEntity = auditLogRepository.save(entity);
         if (mEntity.getId() == null) {
             builder.setErrCode(503);
@@ -97,6 +107,9 @@ public class AuditServiceImpl implements AuditService {
                 if (request.hasUserId()) {
                     cons.add(builder.equal(root.<String>get("userId"), request.getUserId()));
                 }
+                if (request.hasRunas()) {
+                    cons.add(builder.equal(root.<String>get("runas"), request.getRunas()));
+                }
                 if (request.hasActivity()) {
                     cons.add(builder.equal(root.<String>get("activity"), request.getActivity()));
                 }
@@ -108,6 +121,9 @@ public class AuditServiceImpl implements AuditService {
                 }
                 if (request.hasEndTime()) {
                     cons.add(builder.lt(root.<Long>get("logTime"), request.getEndTime()));
+                }
+                if (request.hasDevice()) {
+                    cons.add(builder.like(root.get("device"), "%" + request.getDevice() + "%"));
                 }
                 return builder.and(cons.toArray(new Predicate[0]));
             }, pr);
@@ -128,7 +144,13 @@ public class AuditServiceImpl implements AuditService {
             bd.setTenantId(lg.getTenantId());
             bd.setIp(lg.getIp());
             bd.setLevel(lg.getLevel());
-            bd.setTemplate(lg.isTemplate());
+            bd.setTemplate(Boolean.TRUE.equals(lg.getTemplate()));
+            if (lg.getRunas() != null) {
+                bd.setRunas(lg.getRunas());
+            }
+            if (lg.getDevice() != null) {
+                bd.setDevice(lg.getDevice());
+            }
             if (newValue != null) {
                 bd.setNewJsonValue(newValue);
             }

@@ -40,7 +40,6 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Parameter;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -86,10 +85,13 @@ public class AuditLogAdvisor {
             catch (Exception e) {
                 lastEx = e;
             }
-
-            val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
-            val tenantId = TenantManager.tenantId("0");
+            val ctx = AuditContextHolder.getContext();
+            val currentUser = CurrentUserProvider.getCurrentUser();
+            val userId = StringUtils.defaultIfBlank(ctx.getUsername(),
+                    StringUtils.defaultIfBlank(currentUser.getUid(), "0"));
+            val tenantId = StringUtils.defaultIfBlank(ctx.getTenantId(), TenantManager.tenantId("0"));
             val ip = GsvcContextHolder.getRemoteIp();
+            val device = currentUser.getDevice();
             val builder = com.apzda.cloud.audit.proto.AuditLog.newBuilder();
 
             builder.setTimestamp(System.currentTimeMillis());
@@ -97,21 +99,23 @@ public class AuditLogAdvisor {
             builder.setActivity(activity);
             builder.setTenantId(tenantId);
             builder.setIp(ip);
+            if (device != null) {
+                builder.setDevice(device);
+            }
             if (lastEx == null) {
                 builder.setLevel(StringUtils.defaultIfBlank(ann.level(), "info"));
             }
             else {
                 builder.setLevel("error");
             }
-            val ctx = AuditContextHolder.getContext();
-            ;
+
             val context = new StandardEvaluationContext(pjp.getTarget());
             context.setVariable("returnObj", returnObj);
             context.setVariable("throwExp", transform(lastEx));
             context.setVariable("isThrow", lastEx != null);
-            context.setVariable("new", ctx.getNewValue());
-            context.setVariable("old", ctx.getOldValue());
-            context.setVariable("data", ctx.getData());
+            context.setVariable("newValue", ctx.getNewValue());
+            context.setVariable("oldValue", ctx.getOldValue());
+            context.setVariable("cData", ctx.getData());
 
             val parameters = method.getParameters();
             var i = 0;

@@ -74,7 +74,9 @@ public class Logger {
     }
 
     public Logger level(String level) {
-        builder.setLevel(level);
+        if (level != null) {
+            builder.setLevel(level);
+        }
         return this;
     }
 
@@ -83,11 +85,18 @@ public class Logger {
         return this;
     }
 
-    public <T> Logger replace(T oldVal, T newVal) {
+    public Logger replace(Object oldVal, Object newVal) {
+        return oldValue(oldVal).newValue(newVal);
+    }
+
+    public Logger oldValue(Object oldVal) {
         if (oldVal != null) {
             try {
                 if (BeanUtils.isSimpleValueType(oldVal.getClass())) {
                     builder.setOldJsonValue(oldVal.toString());
+                }
+                else if (oldVal instanceof String) {
+                    builder.setOldJsonValue((String) oldVal);
                 }
                 else {
                     val oldStr = objectMapper.writeValueAsString(oldVal);
@@ -98,10 +107,17 @@ public class Logger {
                 log.warn("Cannot serialize old value: {} - {}", oldVal, e.getMessage());
             }
         }
+        return this;
+    }
+
+    public Logger newValue(Object newVal) {
         if (newVal != null) {
             try {
                 if (BeanUtils.isSimpleValueType(newVal.getClass())) {
                     builder.setNewJsonValue(newVal.toString());
+                }
+                else if (newVal instanceof String) {
+                    builder.setNewJsonValue((String) newVal);
                 }
                 else {
                     val newStr = objectMapper.writeValueAsString(newVal);
@@ -111,6 +127,20 @@ public class Logger {
             catch (JsonProcessingException e) {
                 log.warn("Cannot serialize new value: {} - {}", newVal, e.getMessage());
             }
+        }
+        return this;
+    }
+
+    public Logger runas(String runas) {
+        if (runas != null) {
+            this.builder.setRunas(runas);
+        }
+        return this;
+    }
+
+    public Logger device(String device) {
+        if (device != null) {
+            this.builder.setDevice(device);
         }
         return this;
     }

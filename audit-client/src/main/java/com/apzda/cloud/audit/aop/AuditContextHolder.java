@@ -16,8 +16,12 @@
  */
 package com.apzda.cloud.audit.aop;
 
+import com.apzda.cloud.gsvc.utils.ResponseUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +31,7 @@ import java.util.Map;
  * @version 1.0.0
  * @since 1.0.0
  **/
+@Slf4j
 public abstract class AuditContextHolder {
 
     private static final ThreadLocal<Context> context = new InheritableThreadLocal<>();
@@ -57,11 +62,15 @@ public abstract class AuditContextHolder {
     @Getter
     public static class Context {
 
-        @Setter
         private Object newValue;
 
-        @Setter
         private Object oldValue;
+
+        @Setter
+        private String username;
+
+        @Setter
+        private String tenantId;
 
         private final Map<String, Object> data;
 
@@ -73,6 +82,32 @@ public abstract class AuditContextHolder {
 
         public void set(String name, Object value) {
             this.data.put(name, value);
+        }
+
+        public void setNewValue(Object newValue) {
+            this.newValue = toJsonString(newValue);
+        }
+
+        public void setOldValue(Object oldValue) {
+            this.oldValue = toJsonString(oldValue);
+        }
+
+        private String toJsonString(Object value) {
+            try {
+                if (BeanUtils.isSimpleValueType(value.getClass())) {
+                    return value.toString();
+                }
+                else if (value instanceof String) {
+                    return (String) value;
+                }
+                else {
+                    return ResponseUtils.OBJECT_MAPPER.writeValueAsString(value);
+                }
+            }
+            catch (JsonProcessingException e) {
+                log.warn("Cannot serialize old value: {} - {}", value, e.getMessage());
+            }
+            return null;
         }
 
     }
