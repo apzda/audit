@@ -16,14 +16,32 @@
  */
 package cn.apzda.cloud.audit;
 
+import com.apzda.cloud.gsvc.context.CurrentUserProvider;
+import com.apzda.cloud.gsvc.dto.CurrentUser;
+import lombok.val;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 
 /**
  * @author fengz (windywany@gmail.com)
  * @version 1.0.0
  * @since 1.0.0
  **/
-@SpringBootApplication
+@SpringBootApplication(proxyBeanMethods = false)
 public class AuditApp {
+
+    @Bean
+    CurrentUserProvider currentUserProvider() {
+        return new CurrentUserProvider() {
+            @Override
+            protected CurrentUser currentUser() {
+                val builder = CurrentUser.builder();
+                builder.runAs("123");
+                builder.uid("admin");
+                builder.device("test");
+                return builder.build();
+            }
+        };
+    }
 
 }

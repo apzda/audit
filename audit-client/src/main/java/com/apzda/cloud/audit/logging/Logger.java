@@ -60,8 +60,10 @@ public class Logger {
         this.objectMapper = objectMapper;
         this.observationRegistry = observationRegistry;
         this.builder = AuditLog.newBuilder();
-
-        val userId = Optional.ofNullable(CurrentUserProvider.getCurrentUser().getUid()).orElse("0");
+        val currentUser = CurrentUserProvider.getCurrentUser();
+        val userId = Optional.ofNullable(currentUser.getUid()).orElse("0");
+        val runAs = currentUser.getRunAs();
+        val device = currentUser.getDevice();
         val tenantId = TenantManager.tenantId("0");
         var ip = GsvcContextHolder.getRemoteIp();
 
@@ -71,6 +73,12 @@ public class Logger {
             .setIp(ip)
             .setLevel("info")
             .setTimestamp(System.currentTimeMillis());
+        if (runAs != null) {
+            this.builder.setRunas(runAs);
+        }
+        if (device != null) {
+            this.builder.setDevice(device);
+        }
     }
 
     public Logger level(String level) {
@@ -127,20 +135,6 @@ public class Logger {
             catch (JsonProcessingException e) {
                 log.warn("Cannot serialize new value: {} - {}", newVal, e.getMessage());
             }
-        }
-        return this;
-    }
-
-    public Logger runas(String runas) {
-        if (runas != null) {
-            this.builder.setRunas(runas);
-        }
-        return this;
-    }
-
-    public Logger device(String device) {
-        if (device != null) {
-            this.builder.setDevice(device);
         }
         return this;
     }

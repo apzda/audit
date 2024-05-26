@@ -17,6 +17,9 @@
 package com.apzda.cloud.audit;
 
 import com.apzda.cloud.audit.server.EnableAuditServer;
+import com.apzda.cloud.gsvc.context.CurrentUserProvider;
+import com.apzda.cloud.gsvc.dto.CurrentUser;
+import lombok.val;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -33,7 +36,7 @@ import java.time.Duration;
  * @version 1.0.0
  * @since 1.0.0
  **/
-@SpringBootApplication
+@SpringBootApplication(proxyBeanMethods = false)
 @EnableAuditServer
 public class TestConfig {
 
@@ -57,6 +60,20 @@ public class TestConfig {
                 .withStartupTimeout(Duration.ofMinutes(3));
         }
 
+    }
+
+    @Bean
+    CurrentUserProvider currentUserProvider() {
+        return new CurrentUserProvider() {
+            @Override
+            protected CurrentUser currentUser() {
+                val builder = CurrentUser.builder();
+                builder.runAs("123");
+                builder.uid("admin");
+                builder.device("test");
+                return builder.build();
+            }
+        };
     }
 
 }

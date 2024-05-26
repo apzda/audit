@@ -94,6 +94,8 @@ public class AuditLogAdvisorTest {
         given(auditService.log(any())).willAnswer((invocation) -> {
             val argument = invocation.getArgument(0, AuditLog.class);
             map.add(argument.getMessage());
+            map.add(argument.getRunas());
+            map.add(argument.getDevice());
             return GsvcExt.CommonRes.newBuilder().build();
         });
         // when
@@ -104,9 +106,9 @@ public class AuditLogAdvisorTest {
         TimeUnit.MILLISECONDS.sleep(500);
         // then
         assertThat(map).isNotEmpty();
-        assertThat(map.size()).isEqualTo(1);
         assertThat(map.get(0)).isEqualTo("you are get then id is: 123, then result is:hello ya:123");
-
+        assertThat(map.get(1)).isEqualTo("123");
+        assertThat(map.get(2)).isEqualTo("test");
     }
 
     @Test

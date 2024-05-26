@@ -108,7 +108,10 @@ public class AuditLogAdvisor {
             else {
                 builder.setLevel("error");
             }
-
+            val runAs = currentUser.getRunAs();
+            if (runAs != null) {
+                builder.setRunas(runAs);
+            }
             val context = new StandardEvaluationContext(pjp.getTarget());
             context.setVariable("returnObj", returnObj);
             context.setVariable("throwExp", transform(lastEx));

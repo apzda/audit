@@ -75,6 +75,8 @@ class AuditServiceImplTest {
         assertThat(log.getArgCount()).isEqualTo(2);
         assertThat(log.getOldJsonValue()).isEqualTo("[\"1\"]");
         assertThat(log.getNewJsonValue()).isEqualTo("[\"2\"]");
+        assertThat(log.getRunas()).isEqualTo("123");
+        assertThat(log.getDevice()).isEqualTo("test");
     }
 
 }
