@@ -53,4 +53,5 @@ message QueryRes {
 service AuditService {
   rpc log(AuditLog) returns(gsvc.CommonRes);
   rpc logs(Query) returns(QueryRes);
+  rpc myLogs(Query) returns(QueryRes);
 }

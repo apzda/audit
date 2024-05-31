@@ -6,6 +6,7 @@ import com.apzda.cloud.audit.proto.Arg;
 import com.apzda.cloud.audit.proto.AuditLog;
 import com.apzda.cloud.audit.proto.AuditService;
 import com.apzda.cloud.audit.proto.Query;
+import com.apzda.cloud.gsvc.ext.GsvcExt;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,18 @@ class AuditServiceImplTest {
     @WithMockUser(username = "admin", authorities = { "r:auditlog" })
     void logs() throws InterruptedException {
         // when
-        val req = Query.newBuilder().build();
+        val req = Query.newBuilder()
+            .setPager(GsvcExt.Pager.newBuilder()
+                .setPageNumber(0)
+                .setPageSize(1)
+                .setSort(GsvcExt.Sorter.newBuilder()
+                    .addOrder(GsvcExt.Sorter.Order.newBuilder()
+                        .setField("logTime")
+                        .setDirection(GsvcExt.Sorter.Direction.DESC))
+                    .build())
+                .build())
+            .build();
+
         logger.activity("test")
             .message("hello world")
             .arg(Arg.newBuilder().setIndex(0).setValue("1"))
@@ -70,8 +82,8 @@ class AuditServiceImplTest {
         val logs = auditService.logs(req);
         // then
         assertThat(logs.getErrCode()).isEqualTo(0);
-        assertThat(logs.getLogCount()).isGreaterThanOrEqualTo(1);
-        val log = logs.getLog(logs.getLogCount() - 1);
+        assertThat(logs.getLogCount()).isEqualTo(1);
+        val log = logs.getLog(0);
         assertThat(log.getArgCount()).isEqualTo(2);
         assertThat(log.getOldJsonValue()).isEqualTo("[\"1\"]");
         assertThat(log.getNewJsonValue()).isEqualTo("[\"2\"]");

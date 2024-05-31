@@ -18,6 +18,7 @@ package com.apzda.cloud.audit.facade;
 
 import com.apzda.cloud.audit.domain.repository.AuditLogRepository;
 import com.apzda.cloud.audit.proto.*;
+import com.apzda.cloud.gsvc.context.CurrentUserProvider;
 import com.apzda.cloud.gsvc.domain.PagerUtils;
 import com.apzda.cloud.gsvc.ext.GsvcExt;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,8 +30,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +100,22 @@ public class AuditServiceImpl implements AuditService {
 
     @Override
     @PreAuthorize("@authz.iCan('r:auditlog')")
+    @Transactional(readOnly = true)
     public QueryRes logs(Query request) {
+        return query(request);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public QueryRes myLogs(Query request) {
+        val id = CurrentUserProvider.getCurrentUser().getId();
+        if (StringUtils.isBlank(id)) {
+            throw new AccessDeniedException("Current user is not logged in");
+        }
+        return query(Query.newBuilder(request).setUserId(id).build());
+    }
+
+    private QueryRes query(Query request) {
         val pager = request.getPager();
         val pr = PagerUtils.of(pager);
         val logs = auditLogRepository
