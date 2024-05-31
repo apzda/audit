@@ -108,7 +108,7 @@ public class AuditServiceImpl implements AuditService {
     @Override
     @Transactional(readOnly = true)
     public QueryRes myLogs(Query request) {
-        val id = CurrentUserProvider.getCurrentUser().getId();
+        val id = CurrentUserProvider.getCurrentUser().getUid();
         if (StringUtils.isBlank(id)) {
             throw new AccessDeniedException("Current user is not logged in");
         }
