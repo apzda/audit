@@ -16,6 +16,7 @@
  */
 package cn.apzda.cloud.audit.controller;
 
+import cn.apzda.cloud.audit.TestVo;
 import com.apzda.cloud.audit.aop.AuditContextHolder;
 import com.apzda.cloud.audit.aop.AuditLog;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,15 @@ public class DemoController {
         val context = AuditContextHolder.getContext();
         context.setOldValue("2");
         return "hello ya:" + id;
+    }
+
+    @AuditLog(activity = "test", message = "#{'new = '+ #newValue}")
+    public String shouldBeAudited3(String id) {
+        val context = AuditContextHolder.getContext();
+        val tv = new TestVo();
+        tv.setPhone("13088888888");
+        context.setNewValue(tv);
+        return shouldBeAudited2(id);
     }
 
 }

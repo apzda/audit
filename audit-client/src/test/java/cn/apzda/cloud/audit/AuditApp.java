@@ -16,8 +16,10 @@
  */
 package cn.apzda.cloud.audit;
 
+import com.apzda.cloud.audit.ValueSanitizer;
 import com.apzda.cloud.gsvc.context.CurrentUserProvider;
 import com.apzda.cloud.gsvc.dto.CurrentUser;
+import jakarta.annotation.Nonnull;
 import lombok.val;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -40,6 +42,24 @@ public class AuditApp {
                 builder.uid("admin");
                 builder.device("test");
                 return builder.build();
+            }
+        };
+    }
+
+    @Bean
+    ValueSanitizer<TestVo> valueSanitizer() {
+        return new ValueSanitizer<>() {
+            @Nonnull
+            @Override
+            public TestVo doSanitize(@Nonnull TestVo value) {
+                val phone = value.getPhone();
+                value.setPhone(phone.substring(0, 3) + "****" + phone.substring(7, 11));
+                return value;
+            }
+
+            @Override
+            public boolean support(Object value) {
+                return value instanceof TestVo;
             }
         };
     }

@@ -236,4 +236,24 @@ public class AuditLogAdvisorTest {
         assertThat(map.get(0)).isEqualTo("new = 1");
     }
 
+    @Test
+    void advisor_should_be_work_ok8() throws InterruptedException {
+        // given
+        val map = new ArrayList<String>();
+        given(auditService.log(any())).willAnswer((invocation) -> {
+            val argument = invocation.getArgument(0, AuditLog.class);
+            map.add(argument.getNewJsonValue());
+            return GsvcExt.CommonRes.newBuilder().build();
+        });
+        // when
+        val str = demoController.shouldBeAudited3("123");
+        // then
+        assertThat(str).isEqualTo("hello ya:123");
+        // when
+        TimeUnit.MILLISECONDS.sleep(500);
+        // then
+        assertThat(map).isNotEmpty();
+        assertThat(map.get(0)).isEqualTo("{\"phone\":\"130****8888\"}");
+    }
+
 }

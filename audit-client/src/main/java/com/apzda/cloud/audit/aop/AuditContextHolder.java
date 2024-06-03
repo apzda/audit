@@ -16,12 +16,14 @@
  */
 package com.apzda.cloud.audit.aop;
 
+import com.apzda.cloud.audit.ValueSanitizer;
 import com.apzda.cloud.gsvc.utils.ResponseUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +37,8 @@ import java.util.Map;
 public abstract class AuditContextHolder {
 
     private static final ThreadLocal<Context> context = new InheritableThreadLocal<>();
+
+    static ObjectProvider<ValueSanitizer<?>> valueSanitizerProvider;
 
     static void create() {
         context.set(new Context(null, null, new HashMap<>()));
@@ -62,8 +66,10 @@ public abstract class AuditContextHolder {
     @Getter
     public static class Context {
 
+        @Setter
         private Object newValue;
 
+        @Setter
         private Object oldValue;
 
         @Setter
@@ -84,16 +90,19 @@ public abstract class AuditContextHolder {
             this.data.put(name, value);
         }
 
-        public void setNewValue(Object newValue) {
-            this.newValue = toJsonString(newValue);
+        public String getNewValueAsString() {
+            return toJsonString(newValue);
         }
 
-        public void setOldValue(Object oldValue) {
-            this.oldValue = toJsonString(oldValue);
+        public String getOldValueAsString() {
+            return toJsonString(oldValue);
         }
 
-        private String toJsonString(Object value) {
+        public static String toJsonString(Object value) {
             try {
+                if (value == null) {
+                    return null;
+                }
                 if (BeanUtils.isSimpleValueType(value.getClass())) {
                     return value.toString();
                 }
@@ -101,13 +110,18 @@ public abstract class AuditContextHolder {
                     return (String) value;
                 }
                 else {
+                    for (ValueSanitizer<?> valueSanitizer : valueSanitizerProvider.orderedStream().toList()) {
+                        if (valueSanitizer.support(value)) {
+                            value = valueSanitizer.sanitize(value);
+                        }
+                    }
                     return ResponseUtils.OBJECT_MAPPER.writeValueAsString(value);
                 }
             }
             catch (JsonProcessingException e) {
                 log.warn("Cannot serialize old value: {} - {}", value, e.getMessage());
             }
-            return null;
+            return "";
         }
 
     }

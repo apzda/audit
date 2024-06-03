@@ -1,6 +1,7 @@
 package cn.apzda.cloud.audit.logging;
 
 import cn.apzda.cloud.audit.AuditApp;
+import cn.apzda.cloud.audit.TestVo;
 import com.apzda.cloud.audit.autoconfig.AuditAutoConfiguration;
 import com.apzda.cloud.audit.logging.AuditLogger;
 import com.apzda.cloud.audit.proto.AuditLog;
@@ -80,6 +81,29 @@ class LoggerTest {
         assertThat(map).isNotEmpty();
         assertThat(map).containsKeys("message");
         assertThat(map.get("message")).isEqualTo("hello world");
+    }
+
+    @Test
+    void sanitize_should_work() throws InterruptedException {
+        // given
+        val map = new HashMap<String, String>();
+        val tv = new TestVo();
+        tv.setPhone("13088888888");
+        given(auditService.log(any())).willAnswer((invocation) -> {
+            val argument = invocation.getArgument(0, AuditLog.class);
+            map.put("message", argument.getMessage());
+            map.put("nv", argument.getNewJsonValue());
+            return GsvcExt.CommonRes.newBuilder().build();
+        });
+
+        // when
+        logger.activity("test").message("hello world").newValue(tv).log();
+        TimeUnit.MILLISECONDS.sleep(500);
+        // then
+        assertThat(map).isNotEmpty();
+        assertThat(map).containsKeys("message");
+        assertThat(map.get("message")).isEqualTo("hello world");
+        assertThat(map.get("nv")).isEqualTo("{\"phone\":\"130****8888\"}");
     }
 
 }

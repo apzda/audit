@@ -16,6 +16,7 @@
  */
 package com.apzda.cloud.audit.logging;
 
+import com.apzda.cloud.audit.aop.AuditContextHolder;
 import com.apzda.cloud.audit.proto.Arg;
 import com.apzda.cloud.audit.proto.AuditLog;
 import com.apzda.cloud.audit.proto.AuditService;
@@ -30,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.lang.NonNull;
 
 import java.util.Optional;
@@ -99,20 +99,9 @@ public class Logger {
 
     public Logger oldValue(Object oldVal) {
         if (oldVal != null) {
-            try {
-                if (BeanUtils.isSimpleValueType(oldVal.getClass())) {
-                    builder.setOldJsonValue(oldVal.toString());
-                }
-                else if (oldVal instanceof String) {
-                    builder.setOldJsonValue((String) oldVal);
-                }
-                else {
-                    val oldStr = objectMapper.writeValueAsString(oldVal);
-                    builder.setOldJsonValue(oldStr);
-                }
-            }
-            catch (JsonProcessingException e) {
-                log.warn("Cannot serialize old value: {} - {}", oldVal, e.getMessage());
+            val str = AuditContextHolder.Context.toJsonString(oldVal);
+            if (str != null) {
+                this.builder.setOldJsonValue(str);
             }
         }
         return this;
@@ -120,20 +109,9 @@ public class Logger {
 
     public Logger newValue(Object newVal) {
         if (newVal != null) {
-            try {
-                if (BeanUtils.isSimpleValueType(newVal.getClass())) {
-                    builder.setNewJsonValue(newVal.toString());
-                }
-                else if (newVal instanceof String) {
-                    builder.setNewJsonValue((String) newVal);
-                }
-                else {
-                    val newStr = objectMapper.writeValueAsString(newVal);
-                    builder.setNewJsonValue(newStr);
-                }
-            }
-            catch (JsonProcessingException e) {
-                log.warn("Cannot serialize new value: {} - {}", newVal, e.getMessage());
+            val str = AuditContextHolder.Context.toJsonString(newVal);
+            if (str != null) {
+                this.builder.setNewJsonValue(str);
             }
         }
         return this;

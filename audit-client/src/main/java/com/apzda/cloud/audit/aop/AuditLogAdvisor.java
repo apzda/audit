@@ -16,6 +16,7 @@
  */
 package com.apzda.cloud.audit.aop;
 
+import com.apzda.cloud.audit.ValueSanitizer;
 import com.apzda.cloud.audit.proto.AuditService;
 import com.apzda.cloud.gsvc.context.CurrentUserProvider;
 import com.apzda.cloud.gsvc.context.TenantManager;
@@ -31,6 +32,8 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParserContext;
@@ -52,7 +55,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Order
 @RequiredArgsConstructor
-public class AuditLogAdvisor {
+public class AuditLogAdvisor implements InitializingBean {
 
     private final ExpressionParser expressionParser = new SpelExpressionParser();
 
@@ -63,6 +66,13 @@ public class AuditLogAdvisor {
     private final ObjectMapper objectMapper;
 
     private final ObservationRegistry observationRegistry;
+
+    private final ObjectProvider<ValueSanitizer<?>> valueSanitizerProvider;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        AuditContextHolder.valueSanitizerProvider = valueSanitizerProvider;
+    }
 
     @Around("@annotation(com.apzda.cloud.audit.aop.AuditLog)")
     public Object interceptor(ProceedingJoinPoint pjp) throws Throwable {
@@ -119,7 +129,12 @@ public class AuditLogAdvisor {
             context.setVariable("newValue", ctx.getNewValue());
             context.setVariable("oldValue", ctx.getOldValue());
             context.setVariable("cData", ctx.getData());
-
+            if (ctx.getNewValue() != null) {
+                builder.setNewJsonValue(ctx.getNewValueAsString());
+            }
+            if (ctx.getOldValue() != null) {
+                builder.setOldJsonValue(ctx.getOldValueAsString());
+            }
             val parameters = method.getParameters();
             var i = 0;
             for (Parameter parameter : parameters) {
