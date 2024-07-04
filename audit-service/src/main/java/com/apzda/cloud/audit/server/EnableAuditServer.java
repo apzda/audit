@@ -17,6 +17,7 @@
 package com.apzda.cloud.audit.server;
 
 import com.apzda.cloud.audit.proto.AuditServiceGsvc;
+import com.apzda.cloud.gsvc.io.YamlPropertySourceFactory;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
@@ -32,7 +33,8 @@ import java.lang.annotation.*;
  **/
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@PropertySource("classpath:apzda.audit.service.yaml")
+@PropertySource(value = "classpath:apzda.audit.service.yaml", factory = YamlPropertySourceFactory.class,
+        name = "audit-builtin-cfg")
 @Import({ AuditServiceGsvc.class })
 @ComponentScan(basePackages = { "com.apzda.cloud.audit.facade", "com.apzda.cloud.audit.domain" })
 @EnableJpaRepositories(basePackages = { "com.apzda.cloud.audit.domain.repository" })
