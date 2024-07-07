@@ -19,13 +19,12 @@ package com.apzda.cloud.audit.autoconfig;
 import com.apzda.cloud.audit.logging.AuditLogger;
 import com.apzda.cloud.audit.logging.AuditLoggerImpl;
 import com.apzda.cloud.audit.proto.AuditService;
-import com.apzda.cloud.audit.proto.AuditServiceGsvc;
+import com.apzda.cloud.gsvc.config.EnableGsvcServices;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Import;
 
 /**
  * @author fengz (windywany@gmail.com)
@@ -33,7 +32,7 @@ import org.springframework.context.annotation.Import;
  * @since 1.0.0
  **/
 @ComponentScan({ "com.apzda.cloud.audit.aop" })
-@Import({ AuditServiceGsvc.class })
+@EnableGsvcServices({ AuditService.class })
 public class AuditAutoConfiguration {
 
     @Bean
