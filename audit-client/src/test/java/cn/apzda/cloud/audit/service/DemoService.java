@@ -17,8 +17,12 @@
 package cn.apzda.cloud.audit.service;
 
 import com.apzda.cloud.audit.aop.AuditLog;
+import com.apzda.cloud.gsvc.dto.Audit;
+import com.apzda.cloud.gsvc.event.AuditEvent;
 import com.apzda.cloud.gsvc.ext.GsvcExt;
+import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,7 +31,10 @@ import org.springframework.stereotype.Service;
  * @since 1.0.0
  **/
 @Service
+@RequiredArgsConstructor
 public class DemoService {
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @AuditLog(activity = "test", template = "error message is {}", args = "#returnObj.errMsg")
     public GsvcExt.CommonRes hello() {
@@ -55,6 +62,15 @@ public class DemoService {
             args = { "#throwExp?.message", "#msg" }, async = false)
     public GsvcExt.CommonRes hello3(String msg) {
         throw new RuntimeException(msg + " is invalid");
+    }
+
+    public void publishEvent() {
+        val audit = new Audit();
+        audit.setActivity("test");
+        audit.setMessage("TEST");
+        audit.getArgs().add("112");
+        val auditEvent = new AuditEvent(audit);
+        eventPublisher.publishEvent(auditEvent);
     }
 
 }

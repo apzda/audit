@@ -31,7 +31,7 @@ import org.springframework.context.annotation.ComponentScan;
  * @version 1.0.0
  * @since 1.0.0
  **/
-@ComponentScan({ "com.apzda.cloud.audit.aop" })
+@ComponentScan({ "com.apzda.cloud.audit.aop", "com.apzda.cloud.audit.listener" })
 @EnableGsvcServices({ AuditService.class })
 public class AuditAutoConfiguration {
 

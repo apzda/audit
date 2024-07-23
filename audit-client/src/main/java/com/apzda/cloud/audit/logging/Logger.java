@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -81,15 +82,58 @@ public class Logger {
         }
     }
 
+    public Logger userId(String userId) {
+        if (userId != null) {
+            builder.setUserid(userId);
+        }
+        else {
+            builder.setUserid(CurrentUserProvider.getCurrentUser().getUid());
+        }
+        return this;
+    }
+
+    public Logger tenantId(String tenantId) {
+        builder.setTenantId(Objects.requireNonNullElseGet(tenantId, () -> TenantManager.tenantId("0")));
+        return this;
+    }
+
+    public Logger timestamp(long timestamp) {
+        builder.setTimestamp(timestamp);
+        return this;
+    }
+
+    public Logger runas(String runas) {
+        if (runas == null) {
+            runas = CurrentUserProvider.getCurrentUser().getRunAs();
+        }
+        if (StringUtils.isNotBlank(runas)) {
+            builder.setRunas(runas);
+        }
+        return this;
+    }
+
     public Logger level(String level) {
-        if (level != null) {
-            builder.setLevel(level);
+        builder.setLevel(Objects.requireNonNullElse(level, "info"));
+        return this;
+    }
+
+    public Logger ip(String ip) {
+        builder.setIp(StringUtils.defaultIfBlank(ip, GsvcContextHolder.getRemoteIp()));
+        return this;
+    }
+
+    public Logger device(String device) {
+        val d = StringUtils.defaultIfBlank(device, CurrentUserProvider.getCurrentUser().getDevice());
+        if (d != null) {
+            builder.setDevice(d);
         }
         return this;
     }
 
     public Logger message(String message) {
-        builder.setMessage(message);
+        if (message != null) {
+            builder.setMessage(message);
+        }
         return this;
     }
 
@@ -132,6 +176,15 @@ public class Logger {
         return this;
     }
 
+    public void log(boolean async) {
+        if (async) {
+            log();
+        }
+        else {
+            log(auditService, objectMapper, builder);
+        }
+    }
+
     public void log() {
         val context = GsvcContextHolder.getContext();
         val observation = Observation.createNotStarted("async", this.observationRegistry);
@@ -148,22 +201,16 @@ public class Logger {
         });
     }
 
-    public void log(boolean async) {
-        if (async) {
-            log();
-        }
-        else {
-            log(auditService, objectMapper, builder);
-        }
-    }
-
     public static void log(AuditService auditService, ObjectMapper objectMapper, AuditLog.Builder builder) {
         try {
             val req = builder.build();
             val str = objectMapper.writeValueAsString(req);
             logger.info("Audit Event: {}", str);
             val rest = auditService.log(req);
-            if (StringUtils.isNotBlank(rest.getErrMsg())) {
+            if (rest == null) {
+                log.warn("Cannot save audit log: {} - null return", str);
+            }
+            else if (StringUtils.isNotBlank(rest.getErrMsg())) {
                 log.warn("Cannot save audit log: {} - {}", str, rest.getErrMsg());
             }
         }
